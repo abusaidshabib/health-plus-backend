@@ -23,11 +23,21 @@ async function run() {
     const db = client.db("health-plus");
     const allServices = db.collection("services");
     const reviewCollection = db.collection("reviews");
+    const available = db.collection("timeslots");
+    const bookingCollection = db.collection("booking");
+    const faqCollection = client.db("hexa_bazaar").collection("faq");
 
     app.get("/services", async (req, res) => {
       let query = {};
       const sort = { index: -1 }
       const data = await allServices.find(query).sort(sort).toArray();
+      res.send(data);
+    })
+
+    app.get("/available/:service", async (req, res) => {
+      const service = req.params.service;
+      const query = { service: `${service}` };
+      const data = await available.findOne(query);
       res.send(data);
     })
 
@@ -55,12 +65,22 @@ async function run() {
       query = { sid: `${id}` }
       const data = await reviewCollection.find(query).toArray();
       res.send(data);
-      console.log(data);
+    })
+
+    app.get("/faq", async (req, res) => {
+      const data = await faqCollection.find().toArray();
+      res.send(data)
     })
 
     app.post("/services", async (req, res) => {
       const data = req.body;
       const result = await allServices.insertOne(data);
+      res.send(result);
+    })
+
+    app.post("/booking", async(req, res) => {
+      const data = req.body;
+      const result = await bookingCollection.insertOne(data);
       res.send(result);
     })
 
@@ -80,10 +100,11 @@ async function run() {
     app.put("/reviews/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(`${id}`) };
+      const data = req.body;
       const options = { upsert: true };
       const upDate = {
         $set: {
-          category: "admin"
+          review: data.review
         }
       }
       const result = await reviewCollection.updateMany(filter, upDate, options);
